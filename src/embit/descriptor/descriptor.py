@@ -237,13 +237,21 @@ class Descriptor(DescriptorBase):
                     # If derivation is found but scriptpubkey doesn't match - fail.
                     # In case of wrapped segwit we need to check redeem script too.
                     # In case of non-wrapped segwit we can check script_pubkey directly.
-                    if sc.redeem_script is not None:
+                    if sc.is_wrapped:
                         redeem_sc = sc.redeem_script()
+
+                        # you can check script_type of both
+                        # script_pubkey and redeem_script
+                        # to make sure they match the psbt_scope
+                        # print("%s-%s" % (sc.script_pubkey().script_type(), redeem_sc.script_type()))
                         return (
                             sc.script_pubkey() == psbt_scope.script_pubkey
                             and redeem_sc.script_type() == psbt_scope.redeem_script.script_type()
                         )
                     else:
+                        # you can check script_type
+                        # to make sure they match the psbt_scope
+                        # print("%s" % sc.script_pubkey().script_type())
                         return sc.script_pubkey() == psbt_scope.script_pubkey
         for pub, (leafs, der) in psbt_scope.taproot_bip32_derivations.items():
             # check of the fingerprints
