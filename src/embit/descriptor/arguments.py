@@ -14,7 +14,10 @@ class KeyOrigin:
     @classmethod
     def from_string(cls, s: str):
         arr = s.split("/")
-        mfp = unhexlify(arr[0])
+        try:
+            mfp = unhexlify(arr[0])
+        except Exception as err:
+            raise ArgumentError(str(err))
         if len(mfp) != 4:
             raise ArgumentError("Invalid fingerprint length")
         arr[0] = "m"
