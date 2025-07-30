@@ -7,6 +7,7 @@ from embit.psbt import DerivationPath, PSBT
 from embit.psbtview import PSBTView
 from embit.ec import SchnorrSig, PublicKey
 from embit.transaction import SIGHASH
+from embit.descriptor.errors import ArgumentError
 from io import BytesIO
 from binascii import unhexlify
 
@@ -130,6 +131,15 @@ class TaprootTest(TestCase):
             Descriptor.from_string(
                 "wpkh(b4ca2da5380d9aeb5ca67e4f18c487ae9b668748517e12b788496f63765e2efa)"
             )
+
+    def test_fail_taproot_tweak(self):
+        desc = "wpkh([abcdef12/84h/22h]xpub6F6wWxm8F64iBHNhyaoh3QKCuuMUY5pfPPr1H1WuZXUXeXtZ21qjFN5ykaqnLL1jtPEFB9d94CyZrcYWKVdSiJKQ6mLGEB5sfrGFBpg6wgA/<0;1>/*)"
+        non_tr_desc = Descriptor.from_string(desc)
+        key = non_tr_desc.keys[0]
+        with self.assertRaises(Exception) as exc:
+            assert not getattr(key, "taproot", False)
+            key.taproot_tweak()
+        self.assertEqual(str(exc.exception), "Key is not taproot")
 
     def test_sign_verify(self):
         unsigned = PSBT.from_string(B64PSBT)

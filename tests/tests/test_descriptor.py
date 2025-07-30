@@ -3,12 +3,41 @@ from binascii import hexlify
 from embit.descriptor import Descriptor, Key
 from embit.descriptor.arguments import KeyHash, Number
 from embit.descriptor.miniscript import OPERATORS, WRAPPERS
-from embit.descriptor.errors import MiniscriptError
+from embit.descriptor.errors import ArgumentError, MiniscriptError
 from embit.descriptor.checksum import add_checksum, DescriptorError
 from embit import ec
 
 
 class DescriptorTest(TestCase):
+
+    def test_fail_wrong_fingerprint_length(self):
+        """Tests that a descriptor with a wrong fingerprint raises an error"""
+        cases = [
+            # A valid fingerprint for the test key is c1684a69
+            # but we use a wrong one here that is c1684a69a (9 characters instead of 8)
+            (
+                "wpkh([c1684a69a/84'/1'/0']tpubDDY2HTrz5YTJGe4dejjxgiiuex6Gfu7Ca21zEkCf7GcWpPhpM172yt9aeJqWg5zD7n6gUFfnFJeyMokc54rCQ9tWLjs9VaZHxV95g6RYjf5/1/*)#2zrpegx5",
+                "Odd-length string",
+            ),
+            # A valid fingerprint for the test key is c1684a69
+            # but we added a bytes at the end to make it invalid (a0)
+            (
+                "wpkh([c1684a69a0/84'/1'/0']tpubDDY2HTrz5YTJGe4dejjxgiiuex6Gfu7Ca21zEkCf7GcWpPhpM172yt9aeJqWg5zD7n6gUFfnFJeyMokc54rCQ9tWLjs9VaZHxV95g6RYjf5/1/*)#2zrpegx5",
+                "Invalid fingerprint length",
+            ),
+            # A valid fingerprint for the test key is c1684a69
+            # but we use a wrong one here that is c1684axj (xj characters instead of 69)
+            (
+                "wpkh([c1684axj/84'/1'/0']tpubDDY2HTrz5YTJGe4dejjxgiiuex6Gfu7Ca21zEkCf7GcWpPhpM172yt9aeJqWg5zD7n6gUFfnFJeyMokc54rCQ9tWLjs9VaZHxV95g6RYjf5/1/*)#2zrpegx5",
+                "Non-hexadecimal digit found",
+            ),
+        ]
+
+        for case in cases:
+            with self.assertRaises(ArgumentError) as exc:
+                Descriptor.from_string(case[0])
+            self.assertEqual(str(exc.exception), case[1])
+
     def test_desc_checksum(self):
         """Tests descriptor checksums"""
         desc = (
