@@ -27,9 +27,25 @@ class Descriptor(DescriptorBase):
         # - raise if taptree is not None, but taproot=False
         if key is None and miniscript is None and taptree is None:
             raise DescriptorError("Provide a key, miniscript or taptree")
+
+        if key is not None and not isinstance(key, Key):
+            raise DescriptorError("'%s' object is not a Key" % key.__class__.__name__)
+
         if miniscript is not None:
             # will raise if can't verify
-            miniscript.verify()
+            try:
+                miniscript.verify()
+            except Exception as err:
+                raise DescriptorError(str(err))
+
+            # Chek correctness of miniscript
+            # (https://github.com/bitcoin/bips/blob/master/bip-0379.md)
+            # the top level B (base) cover the following cases:
+            # - older(n), after(n);
+            # - sha256(h), ripemd160(h), hash256(h), hash160(h);
+            # - and_b(X,Y), or_b(X,Z), or_d(X,Z);
+            # - thresh(k,X_1,...,X_n), multi(k,key_1,...,key_n), multi_a(k,key_1,...,key_n);
+            # - c:X, d:X, j:X, n:X;
             if miniscript.type != "B":
                 raise DescriptorError("Top level miniscript should be 'B'")
             # check all branches have the same length
@@ -44,10 +60,15 @@ class Descriptor(DescriptorBase):
         self.miniscript = miniscript
         self.wpkh = wpkh
         self.taproot = taproot
+
         self.taptree = taptree or TapTree()
+
         # make sure all keys are either taproot or not
-        for k in self.keys:
-            k.taproot = taproot
+        try:
+            for k in self.keys:
+                k.taproot = taproot
+        except Exception as err:
+            raise DescriptorError(str(err))
 
     @property
     def script_len(self):
