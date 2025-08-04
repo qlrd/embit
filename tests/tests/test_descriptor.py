@@ -1,6 +1,7 @@
 from unittest import TestCase
 from binascii import hexlify
 from embit.descriptor import Descriptor, Key
+from embit.descriptor import miniscript
 from embit.descriptor.arguments import KeyHash, Number
 from embit.descriptor.miniscript import OPERATORS, WRAPPERS
 from embit.descriptor.errors import ArgumentError, MiniscriptError
@@ -9,6 +10,24 @@ from embit import ec
 
 
 class DescriptorTest(TestCase):
+
+    def test_fail_initialization(self):
+        """
+        Tests the initialization of a Descriptor instance
+        initialization, where key, miniscript or taptree
+        arguments None.
+        """
+        cases = [
+            (None, None, None, "Provide a key, miniscript or taptree"),
+            ("key", None, None, "'str' object is not a Key"),
+            (None, "miniscript", None, "'str' object has no attribute 'verify'"),
+            (None, None, "taptree", "'str' object has no attribute 'keys'"),
+        ]
+
+        for case in cases:
+            with self.assertRaises(DescriptorError) as exc:
+                Descriptor(key=case[0], miniscript=case[1], taptree=case[2])
+            self.assertEqual(str(exc.exception), case[3])
 
     def test_fail_wrong_fingerprint_length(self):
         """Tests that a descriptor with a wrong fingerprint raises an error"""
