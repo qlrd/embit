@@ -1,9 +1,7 @@
-from unittest import TestCase, skip
-from util.liquid import daemon
 import random
-import time
 import os
-
+from unittest import TestCase
+from util.liquid import daemon
 from embit.liquid.descriptor import LDescriptor as Descriptor
 from embit.descriptor.checksum import add_checksum
 from embit.bip32 import HDKey

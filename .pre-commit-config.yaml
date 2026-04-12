@@ -1,6 +1,89 @@
+# Two hooks (approach 1): unit-only is fast; integration still builds/restores
+# daemons.
+#
+# Skip when needed:
+#
+# SKIP=conventional-pre-commit,isort,black,pylint,shellcheck,typos,unit-test,integration-test git commit ...
+#
+# Typos uses --force-exclude so _typos.toml extend-exclude (tests, wordlists,
+# i18n fixtures) applies when hooks pass explicit paths.
+#
+# Mirrors .github/workflows/code-quality.yml
+# (isort → black → pylint → shellcheck → typos) and tests.yml.
+#
+# After changing this file: pre-commit install --install-hooks  (installs
+# pre-commit + commit-msg hooks).
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
 repos:
--   repo: https://github.com/psf/black
-    rev: 22.3.0
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
     hooks:
-    - id: black
-      language_version: python3
+      - id: isort
+        name: isort (black profile)
+        args: [--settings-path=pyproject.toml]
+        files: ^src/embit/
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        name: black
+        entry: black ./src/embit
+
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v3.3.8
+    hooks:
+      - id: pylint
+        name: pylint (errors-only)
+        args: [--errors-only, --rcfile=pyproject.toml]
+        additional_dependencies: []
+        files: ^src/embit/
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        name: shellcheck (tests/run.sh)
+        files: ^tests/run\.sh$
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.45.0
+    hooks:
+      - id: typos
+        name: typos (spell check)
+        args: [--force-exclude]
+
+  - repo: local
+    hooks:
+      - id: test-clean
+        name: test-clean
+        entry: python -c 'import shutil, os; os.path.exists("htmlcov") and shutil.rmtree("htmlcov")'
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+      - id: unit-test
+        name: unit-test
+        entry: poetry run pytest --cache-clear --cov src/embit --cov-report html --show-capture all --capture tee-sys -r A ./tests/tests
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+      - id: integration-test
+        name: integration-test
+        entry: bash -c 'ulimit -n 10240 2>/dev/null; poetry run bash tests/run.sh'
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        name: conventional-commit-1.0
+        stages: [commit-msg]
+        args: []

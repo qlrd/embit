@@ -1,4 +1,4 @@
-from unittest import TestCase, skip
+from unittest import TestCase
 from util.bitcoin import daemon
 import random
 from embit.descriptor import Descriptor
@@ -36,26 +36,27 @@ class PSBTTest(TestCase):
         # to add checksums
         d1 = add_checksum(str(d1))
         d2 = add_checksum(str(d2))
-        rpc.createwallet(wname, True, True)
+        # createwallet(name, disable_private_keys, blank,
+        #   passphrase, avoid_reuse, descriptors)
+        rpc.createwallet(wname, True, True, "", False, True)
         w = daemon.wallet(wname)
-        res = w.importmulti(
+        res = w.importdescriptors(
             [
                 {
                     "desc": d1,
                     "internal": False,
                     "timestamp": "now",
-                    "watchonly": True,
+                    "active": True,
                     "range": 10,
                 },
                 {
                     "desc": d2,
                     "internal": True,
                     "timestamp": "now",
-                    "watchonly": True,
+                    "active": True,
                     "range": 10,
                 },
             ],
-            {"rescan": False},
         )
         self.assertTrue(all([k["success"] for k in res]))
         wdefault = daemon.wallet()

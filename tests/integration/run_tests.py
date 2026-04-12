@@ -8,18 +8,18 @@ if sys.implementation.name == "micropython":
 from util.bitcoin import daemon as bitcoind
 from util.liquid import daemon as elementsd
 import unittest
-import time
 
 
 def main():
     try:
         bitcoind.start()
         elementsd.start()
-        unittest.main("tests")
-        time.sleep(10)
+        result = unittest.main("tests", exit=False)
+        if not result.result.wasSuccessful():
+            sys.exit(1)
     finally:
-        bitcoind.stop()
         elementsd.stop()
+        bitcoind.stop()
 
 
 if __name__ == "__main__":
