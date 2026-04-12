@@ -1,0 +1,67 @@
+name: Code quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: code-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: poetry
+      - run: poetry install --with dev
+      - name: isort (black profile)
+        run: poetry run isort --check --settings-path=pyproject.toml src/embit
+
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: poetry
+      - run: poetry install --with dev
+      - name: Black
+        run: poetry run black --check src/embit
+
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: poetry
+      - run: poetry install --with dev
+      - name: Pylint (errors-only)
+        run: poetry run pylint --errors-only --rcfile=pyproject.toml src/embit
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          shellcheck tests/run.sh
+
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Typos (spell check)
+        uses: crate-ci/typos@v1.45.0
